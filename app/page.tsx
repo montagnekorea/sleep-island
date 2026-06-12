@@ -8,7 +8,7 @@ import { Island } from "@/components/island";
 import { TreeIcon } from "@/components/tree-icon";
 
 export default function HomePage() {
-  const { username, trees, saplings, completedTasks, sleep } = useGame();
+  const { username, trees, saplings, completedTasks, sleep, islandType } = useGame();
   const [greeting, setGreeting] = useState("Good evening");
   const [sleeping, setSleeping] = useState(false);
   const [result, setResult] = useState<SleepResult | null>(null);
@@ -42,7 +42,7 @@ export default function HomePage() {
       </p>
 
       <div className="mt-7 animate-float-soft">
-        <Island trees={trees} compact />
+        <Island trees={trees} islandType={islandType} compact />
       </div>
 
       <div className="mt-6 flex gap-2">
@@ -98,7 +98,11 @@ function SleepResultModal({
         {result.kind === "growth" ? (
           <>
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-moss-100">
-              <TreeIcon rarity={result.grown[0]?.rarity ?? "common"} className="h-10 w-10" />
+              <TreeIcon
+                rarity={result.grown[0]?.rarity ?? "common"}
+                variant={result.grown[0]?.variant ?? 0}
+                className="h-10 w-10"
+              />
             </div>
             <h2 className="mt-4 text-lg font-extrabold text-stone-800">
               A full night&apos;s sleep!
@@ -110,7 +114,12 @@ function SleepResultModal({
             </p>
             <div className="mt-4 flex justify-center gap-2">
               {result.grown.map((t) => (
-                <TreeIcon key={t.id} rarity={t.rarity} className="h-9 w-9 animate-grow-in" />
+                <TreeIcon
+                  key={t.id}
+                  rarity={t.rarity}
+                  variant={t.variant}
+                  className="h-9 w-9 animate-grow-in"
+                />
               ))}
             </div>
           </>

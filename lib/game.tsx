@@ -8,7 +8,11 @@ import {
   type ReactNode,
 } from "react";
 
-export type Rarity = "common" | "rare" | "epic";
+export type Rarity = "common" | "rare" | "epic" | "legendary" | "mythical";
+
+export type IslandType = "forest" | "beach" | "mountain";
+
+export const TREE_VARIANTS = 3;
 
 export interface Sapling {
   id: string;
@@ -18,6 +22,7 @@ export interface Sapling {
 export interface Tree {
   id: string;
   rarity: Rarity;
+  variant: number;
 }
 
 export interface DailyTask {
@@ -40,20 +45,32 @@ export const RARITY_INFO: Record<
   Rarity,
   { label: string; chance: string; badge: string }
 > = {
-  common: { label: "Common", chance: "70%", badge: "bg-moss-100 text-moss-700" },
+  common: { label: "Common", chance: "60%", badge: "bg-moss-100 text-moss-700" },
   rare: { label: "Rare", chance: "25%", badge: "bg-rare-400/15 text-rare-500" },
-  epic: { label: "Epic", chance: "5%", badge: "bg-epic-400/15 text-epic-500" },
+  epic: { label: "Epic", chance: "10%", badge: "bg-epic-400/15 text-epic-500" },
+  legendary: {
+    label: "Legendary",
+    chance: "4%",
+    badge: "bg-legend-400/15 text-legend-500",
+  },
+  mythical: {
+    label: "Mythical",
+    chance: "1%",
+    badge: "bg-myth-400/15 text-myth-500",
+  },
 };
 
 export function rollRarity(): Rarity {
   const r = Math.random();
-  if (r < 0.05) return "epic";
-  if (r < 0.3) return "rare";
+  if (r < 0.01) return "mythical";
+  if (r < 0.05) return "legendary";
+  if (r < 0.15) return "epic";
+  if (r < 0.4) return "rare";
   return "common";
 }
 
 export function islandCapacity(treeCount: number): number {
-  return [9, 16, 25, 36].find((c) => c > treeCount) ?? 36;
+  return [7, 19, 37].find((c) => c > treeCount) ?? 37;
 }
 
 export type SleepResult =
@@ -66,10 +83,14 @@ interface GameContextValue {
   saplings: Sapling[];
   trees: Tree[];
   claimedToday: boolean;
+  islandType: IslandType;
   toggleTask: (id: string) => void;
   claimSapling: () => Sapling | null;
   sleep: () => SleepResult;
   setUsername: (name: string) => void;
+  setIslandType: (type: IslandType) => void;
+  cycleTreeVariant: (id: string) => void;
+  removeTree: (id: string) => void;
   resetProgress: () => void;
 }
 
@@ -82,11 +103,12 @@ function makeId(): string {
 }
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [username, setUsernameState] = useState("Hugo");
+  const [username, setUsernameState] = useState("Guest");
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [saplings, setSaplings] = useState<Sapling[]>([]);
   const [trees, setTrees] = useState<Tree[]>([]);
   const [claimedToday, setClaimedToday] = useState(false);
+  const [islandType, setIslandTypeState] = useState<IslandType>("forest");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -99,8 +121,23 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
         if (Array.isArray(saved.completedTasks)) setCompletedTasks(saved.completedTasks);
         if (Array.isArray(saved.saplings)) setSaplings(saved.saplings);
-        if (Array.isArray(saved.trees)) setTrees(saved.trees);
+        if (Array.isArray(saved.trees)) {
+          // older saves have trees without a variant — default them to 0
+          setTrees(
+            saved.trees.map((t: Tree) => ({
+              ...t,
+              variant: typeof t.variant === "number" ? t.variant : 0,
+            }))
+          );
+        }
         if (typeof saved.claimedToday === "boolean") setClaimedToday(saved.claimedToday);
+        if (
+          saved.islandType === "forest" ||
+          saved.islandType === "beach" ||
+          saved.islandType === "mountain"
+        ) {
+          setIslandTypeState(saved.islandType);
+        }
       }
     } catch {
       // corrupted save — start fresh
@@ -112,9 +149,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ username, completedTasks, saplings, trees, claimedToday })
+      JSON.stringify({
+        username,
+        completedTasks,
+        saplings,
+        trees,
+        claimedToday,
+        islandType,
+      })
     );
-  }, [hydrated, username, completedTasks, saplings, trees, claimedToday]);
+  }, [hydrated, username, completedTasks, saplings, trees, claimedToday, islandType]);
 
   const toggleTask = (id: string) => {
     setCompletedTasks((prev) =>
@@ -138,7 +182,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const pending = [...saplings];
       // earned but unclaimed sapling still counts — auto-claim it
       if (!claimedToday) pending.push({ id: makeId(), rarity: rollRarity() });
-      const grown: Tree[] = pending.map((s) => ({ id: s.id, rarity: s.rarity }));
+      const grown: Tree[] = pending.map((s) => ({
+        id: s.id,
+        rarity: s.rarity,
+        variant: Math.floor(Math.random() * TREE_VARIANTS),
+      }));
       setTrees((prev) => [...prev, ...grown]);
       result = { kind: "growth", grown };
     } else {
@@ -163,6 +211,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (clean) setUsernameState(clean);
   };
 
+  const setIslandType = (type: IslandType) => {
+    setIslandTypeState(type);
+  };
+
+  const cycleTreeVariant = (id: string) => {
+    setTrees((prev) =>
+      prev.map((t) =>
+        t.id === id ? { ...t, variant: (t.variant + 1) % TREE_VARIANTS } : t
+      )
+    );
+  };
+
+  const removeTree = (id: string) => {
+    setTrees((prev) => prev.filter((t) => t.id !== id));
+  };
+
   const resetProgress = () => {
     setCompletedTasks([]);
     setSaplings([]);
@@ -178,10 +242,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
         saplings,
         trees,
         claimedToday,
+        islandType,
         toggleTask,
         claimSapling,
         sleep,
         setUsername,
+        setIslandType,
+        cycleTreeVariant,
+        removeTree,
         resetProgress,
       }}
     >

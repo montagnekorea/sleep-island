@@ -1,11 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useGame } from "@/lib/game";
+import { Mountain, TreePine, Umbrella } from "lucide-react";
+import { useGame, type IslandType } from "@/lib/game";
 import { PageHeader } from "@/components/page-header";
 
+const ISLAND_STYLES: Array<{
+  type: IslandType;
+  label: string;
+  icon: typeof TreePine;
+  blurb: string;
+}> = [
+  { type: "forest", label: "Forest", icon: TreePine, blurb: "Mossy meadows" },
+  { type: "beach", label: "Beach", icon: Umbrella, blurb: "Sand, seals & gulls" },
+  { type: "mountain", label: "Mountain", icon: Mountain, blurb: "Peaks, deer & birds" },
+];
+
 export default function SettingsPage() {
-  const { username, setUsername, resetProgress } = useGame();
+  const { username, setUsername, islandType, setIslandType, resetProgress } = useGame();
   const [name, setName] = useState(username);
   const [saved, setSaved] = useState(false);
   const [confirmingReset, setConfirmingReset] = useState(false);
@@ -66,6 +78,32 @@ export default function SettingsPage() {
 
       <section className="mt-4 rounded-2xl bg-white p-5 shadow-sm">
         <h2 className="text-xs font-extrabold uppercase tracking-wider text-stone-400">
+          Island style
+        </h2>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {ISLAND_STYLES.map(({ type, label, icon: Icon, blurb }) => {
+            const active = islandType === type;
+            return (
+              <button
+                key={type}
+                onClick={() => setIslandType(type)}
+                className={`flex flex-col items-center gap-1 rounded-xl border p-3 transition ${
+                  active
+                    ? "border-moss-400 bg-moss-100/70 text-moss-700"
+                    : "border-stone-200 bg-white text-stone-400 hover:border-moss-200"
+                }`}
+              >
+                <Icon size={18} />
+                <span className="text-xs font-extrabold">{label}</span>
+                <span className="text-[10px] font-semibold leading-tight">{blurb}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+        <h2 className="text-xs font-extrabold uppercase tracking-wider text-stone-400">
           Danger zone
         </h2>
         <p className="mt-2 text-xs font-semibold text-stone-400">
@@ -85,7 +123,7 @@ export default function SettingsPage() {
       </section>
 
       <p className="mt-8 text-center text-[11px] font-semibold text-stone-300">
-        Sleep Island v0.1 — be kind to your trees 🌲
+        Sleep Island v0.2 — be kind to your trees 🌲
       </p>
     </div>
   );

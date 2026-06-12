@@ -5,7 +5,7 @@ import { RARITY_INFO, useGame, type Rarity } from "@/lib/game";
 import { PageHeader } from "@/components/page-header";
 import { TreeIcon } from "@/components/tree-icon";
 
-const RARITIES: Rarity[] = ["common", "rare", "epic"];
+const RARITIES: Rarity[] = ["common", "rare", "epic", "legendary", "mythical"];
 
 export default function RewardsPage() {
   const { saplings, trees } = useGame();
@@ -67,6 +67,10 @@ export default function RewardsPage() {
             </li>
           ))}
         </ul>
+        <p className="mt-3 text-[11px] font-semibold text-stone-400">
+          Every tier comes in three looks — pine, broadleaf and cypress. Tap your trees on the
+          profile page to restyle them.
+        </p>
       </section>
 
       <section className="mt-4">

@@ -30,7 +30,7 @@ export default function FriendsPage() {
                     {friend.name}
                   </span>
                   <span className="block text-xs font-semibold text-stone-400">
-                    @{friend.handle} · {friend.trees.length} tree
+                    @{friend.handle} · {friend.islandType} island · {friend.trees.length} tree
                     {friend.trees.length === 1 ? "" : "s"}
                   </span>
                 </span>
@@ -41,7 +41,7 @@ export default function FriendsPage() {
               </button>
               {open && (
                 <div className="flex animate-fade-up flex-col items-center px-4 pb-5">
-                  <Island trees={friend.trees} compact />
+                  <Island trees={friend.trees} islandType={friend.islandType} compact />
                   <p className="mt-3 text-xs font-semibold text-stone-400">
                     {friend.trees.length === 0
                       ? `${friend.name}'s island is still empty`

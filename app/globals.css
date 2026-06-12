@@ -23,6 +23,12 @@
 
   --color-epic-400: #b298d4;
   --color-epic-500: #9377b8;
+
+  --color-legend-400: #dbb56b;
+  --color-legend-500: #a8853d;
+
+  --color-myth-400: #e29ac4;
+  --color-myth-500: #c46fa3;
 }
 
 @keyframes grow-in {
@@ -67,6 +73,27 @@
   }
 }
 
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(1.22);
+    opacity: 0;
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+
 .animate-grow-in {
   animation: grow-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
@@ -81,4 +108,17 @@
 
 .animate-fade-up {
   animation: fade-up 0.3s ease-out both;
+}
+
+.animate-ripple {
+  animation: ripple 4.5s ease-out infinite;
+}
+
+.animate-bob {
+  animation: bob 3.2s ease-in-out infinite;
+}
+
+.tf-center {
+  transform-box: fill-box;
+  transform-origin: center;
 }

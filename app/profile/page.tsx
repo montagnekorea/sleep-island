@@ -1,13 +1,25 @@
 "use client";
 
-import { islandCapacity, useGame } from "@/lib/game";
+import { useState } from "react";
+import {
+  islandCapacity,
+  RARITY_INFO,
+  TREE_VARIANTS,
+  useGame,
+  type Tree,
+} from "@/lib/game";
 import { PageHeader } from "@/components/page-header";
 import { Island } from "@/components/island";
+import { TreeIcon } from "@/components/tree-icon";
 
 export default function ProfilePage() {
-  const { username, trees, saplings } = useGame();
+  const { username, trees, saplings, islandType, cycleTreeVariant, removeTree } = useGame();
+  const [selected, setSelected] = useState<Tree | null>(null);
+
   const capacity = islandCapacity(trees.length);
-  const epicCount = trees.filter((t) => t.rarity === "epic").length;
+  const epicPlus = trees.filter(
+    (t) => t.rarity === "epic" || t.rarity === "legendary" || t.rarity === "mythical"
+  ).length;
 
   return (
     <div>
@@ -23,7 +35,7 @@ export default function ProfilePage() {
         <div className="mt-5 grid w-full grid-cols-3 divide-x divide-stone-100 rounded-2xl bg-fog-50 py-3.5 text-center">
           <Stat value={trees.length} label="Trees" />
           <Stat value={saplings.length} label="Saplings" />
-          <Stat value={epicCount} label="Epic" />
+          <Stat value={epicPlus} label="Epic+" />
         </div>
       </div>
 
@@ -32,12 +44,63 @@ export default function ProfilePage() {
           Your island
         </h2>
         <div className="mt-3 w-full">
-          <Island trees={trees} />
+          <Island trees={trees} islandType={islandType} onTreeClick={setSelected} />
         </div>
         <p className="mt-3 text-xs font-semibold text-stone-400">
-          {trees.length} / {capacity} plots — the island expands when it fills up
+          {trees.length} / {capacity} plots — tap a tree to restyle or remove it
         </p>
       </section>
+
+      {selected && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/30 px-6 backdrop-blur-sm"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="w-full max-w-sm animate-grow-in rounded-3xl bg-white p-7 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-fog-100">
+              <TreeIcon rarity={selected.rarity} variant={selected.variant} className="h-12 w-12" />
+            </div>
+            <h2 className="mt-3 text-lg font-extrabold text-stone-800">
+              {RARITY_INFO[selected.rarity].label} tree
+            </h2>
+            <p className="mt-1 text-xs font-semibold text-stone-400">
+              Restyle it, or clear the plot for something new.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  cycleTreeVariant(selected.id);
+                  setSelected({
+                    ...selected,
+                    variant: (selected.variant + 1) % TREE_VARIANTS,
+                  });
+                }}
+                className="w-full rounded-2xl bg-moss-500 py-3 text-sm font-extrabold text-white shadow-md shadow-moss-500/30 transition hover:bg-moss-600"
+              >
+                Change look
+              </button>
+              <button
+                onClick={() => {
+                  removeTree(selected.id);
+                  setSelected(null);
+                }}
+                className="w-full rounded-2xl border border-red-200 bg-red-50 py-3 text-sm font-extrabold text-red-400 transition hover:bg-red-100"
+              >
+                Remove tree
+              </button>
+              <button
+                onClick={() => setSelected(null)}
+                className="w-full rounded-2xl py-2.5 text-sm font-bold text-stone-400 transition hover:text-stone-500"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

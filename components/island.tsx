@@ -170,8 +170,7 @@ export function Island({
   return (
     <div className={compact ? "w-72" : "w-full"}>
       <svg viewBox="0 0 320 320" className="block h-auto w-full drop-shadow-lg">
-        {/* water */}
-        <rect width="320" height="320" rx="44" fill="#9cc0c7" />
+        {/* open water around the island — the page ocean shows through */}
         <circle cx="160" cy="160" r="132" fill="rgba(255,255,255,0.07)" />
         <circle
           cx="160"

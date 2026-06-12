@@ -122,7 +122,7 @@ export default function SettingsPage() {
         </button>
       </section>
 
-      <p className="mt-8 text-center text-[11px] font-semibold text-stone-300">
+      <p className="mt-8 text-center text-[11px] font-semibold text-sea-800/50">
         Sleep Island v0.2 — be kind to your trees 🌲
       </p>
     </div>

@@ -31,13 +31,13 @@ export default function HomePage() {
   return (
     <div className="flex flex-col items-center">
       <div className="flex w-full justify-end">
-        <span className="text-xs font-semibold text-stone-400">@{username.toLowerCase()}</span>
+        <span className="text-xs font-semibold text-sea-800/70">@{username.toLowerCase()}</span>
       </div>
 
       <h1 className="mt-2 text-center font-script text-3xl leading-relaxed text-stone-800">
         {greeting}, {username}
       </h1>
-      <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.18em] text-stone-400">
+      <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.18em] text-sea-800/60">
         every good night grows a tree
       </p>
 
@@ -70,11 +70,11 @@ export default function HomePage() {
         <Moon size={52} strokeWidth={1.8} fill={sleeping ? "currentColor" : "none"} />
       </button>
 
-      <p className="mt-5 text-sm font-extrabold text-stone-500">
+      <p className="mt-5 text-sm font-extrabold text-sea-800">
         {sleeping ? "Sleeping… 8 hours drift by 💤" : "Activate Sleep Mode"}
       </p>
       {!sleeping && tasksDone < TASK_GOAL && (
-        <p className="mt-1.5 text-xs font-semibold text-stone-400">
+        <p className="mt-1.5 text-xs font-semibold text-sea-800/70">
           {TASK_GOAL - tasksDone} task{TASK_GOAL - tasksDone === 1 ? "" : "s"} left — or the
           lumberjack pays a visit
         </p>

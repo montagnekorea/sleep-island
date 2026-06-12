@@ -40,13 +40,13 @@ export default function ProfilePage() {
       </div>
 
       <section className="mt-6 flex flex-col items-center">
-        <h2 className="text-xs font-extrabold uppercase tracking-wider text-stone-400">
+        <h2 className="text-xs font-extrabold uppercase tracking-wider text-sea-800/70">
           Your island
         </h2>
         <div className="mt-3 w-full">
           <Island trees={trees} islandType={islandType} onTreeClick={setSelected} />
         </div>
-        <p className="mt-3 text-xs font-semibold text-stone-400">
+        <p className="mt-3 text-xs font-semibold text-sea-800/70">
           {trees.length} / {capacity} plots — tap a tree to restyle or remove it
         </p>
       </section>

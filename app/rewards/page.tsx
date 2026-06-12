@@ -74,7 +74,7 @@ export default function RewardsPage() {
       </section>
 
       <section className="mt-4">
-        <h2 className="px-1 text-xs font-extrabold uppercase tracking-wider text-stone-400">
+        <h2 className="px-1 text-xs font-extrabold uppercase tracking-wider text-sea-800/70">
           Trophy shelf
         </h2>
         <div className="mt-2.5 grid grid-cols-3 gap-2.5">

@@ -235,7 +235,7 @@ function SleepResultModal({
             </h2>
             <p className="mt-2 text-sm font-semibold text-stone-500">
               {result.grown.length === 1
-                ? `Your sapling grew into a ${RARITY_INFO[result.grown[0].rarity].label.toLowerCase()} tree.`
+                ? `Your sapling grew into a ${RARITY_INFO[result.grown[0].rarity].label.toLowerCase()} ${RARITY_INFO[result.grown[0].rarity].species.toLowerCase()}.`
                 : `${result.grown.length} saplings grew into trees on your island.`}
             </p>
             <div className="mt-4 flex justify-center gap-2">
@@ -265,7 +265,7 @@ function SleepResultModal({
             </h2>
             <p className="mt-2 text-sm font-semibold text-stone-500">
               {result.removed
-                ? `You skipped your tasks, so he chopped down a ${RARITY_INFO[result.removed.rarity].label.toLowerCase()} tree.`
+                ? `You skipped your tasks, so he chopped down a ${RARITY_INFO[result.removed.rarity].label.toLowerCase()} ${RARITY_INFO[result.removed.rarity].species.toLowerCase()}.`
                 : "You skipped your tasks — luckily there was nothing on your island to chop. Yet."}
             </p>
             {result.streakLost > 0 && (

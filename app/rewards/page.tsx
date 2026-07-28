@@ -82,7 +82,7 @@ export default function RewardsPage() {
                     {RARITY_INFO[s.rarity].label} sapling
                   </p>
                   <p className="text-xs font-semibold text-stone-400">
-                    Grows after a full night&apos;s sleep
+                    Grows into a {RARITY_INFO[s.rarity].species.toLowerCase()} tonight
                   </p>
                 </div>
               </li>
@@ -100,9 +100,14 @@ export default function RewardsPage() {
             const up = odds[rarity] > baseOdds[rarity] + 0.05;
             return (
               <li key={rarity} className="flex items-center gap-3">
-                <TreeIcon rarity={rarity} className="h-7 w-7" />
-                <span className="text-sm font-bold text-stone-600">
-                  {RARITY_INFO[rarity].label}
+                <TreeIcon rarity={rarity} className="h-8 w-8 shrink-0" />
+                <span className="flex flex-col leading-tight">
+                  <span className="text-sm font-bold text-stone-600">
+                    {RARITY_INFO[rarity].label}
+                  </span>
+                  <span className="text-[11px] font-semibold text-stone-400">
+                    {RARITY_INFO[rarity].species}
+                  </span>
                 </span>
                 <span className="ml-auto flex items-baseline gap-1.5">
                   {boosted && (

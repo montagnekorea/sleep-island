@@ -66,7 +66,8 @@ export default function ProfilePage() {
               <TreeIcon rarity={selected.rarity} variant={selected.variant} className="h-12 w-12" />
             </div>
             <h2 className="mt-3 text-lg font-extrabold text-stone-800">
-              {RARITY_INFO[selected.rarity].label} tree
+              {RARITY_INFO[selected.rarity].label}{" "}
+              {RARITY_INFO[selected.rarity].species.toLowerCase()}
             </h2>
             <p className="mt-1 text-xs font-semibold text-stone-400">
               Restyle it, or clear the plot for something new.

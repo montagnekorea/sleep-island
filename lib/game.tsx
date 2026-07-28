@@ -48,12 +48,28 @@ export const DAILY_TASKS: DailyTask[] = [
 
 export const TASK_GOAL = 5;
 
-export const RARITY_INFO: Record<Rarity, { label: string; badge: string }> = {
-  common: { label: "Common", badge: "bg-moss-100 text-moss-700" },
-  rare: { label: "Rare", badge: "bg-rare-400/15 text-rare-500" },
-  epic: { label: "Epic", badge: "bg-epic-400/15 text-epic-500" },
-  legendary: { label: "Legendary", badge: "bg-legend-400/15 text-legend-500" },
-  mythical: { label: "Mythical", badge: "bg-myth-400/15 text-myth-500" },
+/** Each tier grows its own species, so rarity reads at a glance. */
+export const RARITY_INFO: Record<
+  Rarity,
+  { label: string; species: string; badge: string }
+> = {
+  common: { label: "Common", species: "Birch", badge: "bg-moss-100 text-moss-700" },
+  rare: {
+    label: "Rare",
+    species: "Weeping willow",
+    badge: "bg-rare-400/15 text-rare-500",
+  },
+  epic: { label: "Epic", species: "Jacaranda", badge: "bg-epic-400/15 text-epic-500" },
+  legendary: {
+    label: "Legendary",
+    species: "Baobab",
+    badge: "bg-legend-400/15 text-legend-500",
+  },
+  mythical: {
+    label: "Mythical",
+    species: "Dragon blood tree",
+    badge: "bg-myth-400/15 text-myth-500",
+  },
 };
 
 /** Streak length at which the luck bonus is fully maxed out. */

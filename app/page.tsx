@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Axe, Flame, ListChecks, Lock, Moon, Sprout } from "lucide-react";
-import { RARITY_INFO, TASK_GOAL, useGame, type SleepResult } from "@/lib/game";
+import { RARITY_INFO, TASK_GOAL, speciesName, useGame, type SleepResult } from "@/lib/game";
 import { WINDOW_CLOSE_HOUR, WINDOW_OPEN_HOUR, formatHour } from "@/lib/time";
 import { Island } from "@/components/island";
 import { LiveClock } from "@/components/live-clock";
@@ -235,7 +235,7 @@ function SleepResultModal({
             </h2>
             <p className="mt-2 text-sm font-semibold text-stone-500">
               {result.grown.length === 1
-                ? `Your sapling grew into a ${RARITY_INFO[result.grown[0].rarity].label.toLowerCase()} ${RARITY_INFO[result.grown[0].rarity].species.toLowerCase()}.`
+                ? `Your sapling grew into a ${RARITY_INFO[result.grown[0].rarity].label.toLowerCase()} ${speciesName(result.grown[0].rarity, result.grown[0].variant).toLowerCase()}.`
                 : `${result.grown.length} saplings grew into trees on your island.`}
             </p>
             <div className="mt-4 flex justify-center gap-2">
@@ -265,7 +265,7 @@ function SleepResultModal({
             </h2>
             <p className="mt-2 text-sm font-semibold text-stone-500">
               {result.removed
-                ? `You skipped your tasks, so he chopped down a ${RARITY_INFO[result.removed.rarity].label.toLowerCase()} ${RARITY_INFO[result.removed.rarity].species.toLowerCase()}.`
+                ? `You skipped your tasks, so he chopped down a ${RARITY_INFO[result.removed.rarity].label.toLowerCase()} ${speciesName(result.removed.rarity, result.removed.variant).toLowerCase()}.`
                 : "You skipped your tasks — luckily there was nothing on your island to chop. Yet."}
             </p>
             {result.streakLost > 0 && (

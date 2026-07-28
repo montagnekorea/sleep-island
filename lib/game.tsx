@@ -19,7 +19,32 @@ export type Rarity = "common" | "rare" | "epic" | "legendary" | "mythical";
 
 export type IslandType = "forest" | "beach" | "mountain";
 
-export const TREE_VARIANTS = 3;
+/**
+ * Each tier grows its own set of species. Which one a sapling becomes is
+ * rolled the night it grows and then fixed for the life of the tree — the
+ * `variant` field on a Tree is an index into its tier's list here. Keep every
+ * list the same length as the others or older saves will shift species.
+ */
+export const SPECIES: Record<Rarity, readonly string[]> = {
+  common: ["Birch", "Oak", "Pine"],
+  rare: ["Weeping willow", "Olive", "Cypress"],
+  epic: ["Jacaranda", "Wisteria", "Foxglove tree"],
+  legendary: ["Baobab", "Ginkgo", "Cedar of Lebanon"],
+  mythical: ["Dragon blood tree", "Cherry blossom", "Rainbow eucalyptus"],
+};
+
+export function speciesIndex(rarity: Rarity, variant: number): number {
+  const n = SPECIES[rarity].length;
+  return ((variant % n) + n) % n;
+}
+
+export function speciesName(rarity: Rarity, variant: number): string {
+  return SPECIES[rarity][speciesIndex(rarity, variant)];
+}
+
+export function rollSpecies(rarity: Rarity): number {
+  return Math.floor(Math.random() * SPECIES[rarity].length);
+}
 
 export interface Sapling {
   id: string;
@@ -48,28 +73,12 @@ export const DAILY_TASKS: DailyTask[] = [
 
 export const TASK_GOAL = 5;
 
-/** Each tier grows its own species, so rarity reads at a glance. */
-export const RARITY_INFO: Record<
-  Rarity,
-  { label: string; species: string; badge: string }
-> = {
-  common: { label: "Common", species: "Birch", badge: "bg-moss-100 text-moss-700" },
-  rare: {
-    label: "Rare",
-    species: "Weeping willow",
-    badge: "bg-rare-400/15 text-rare-500",
-  },
-  epic: { label: "Epic", species: "Jacaranda", badge: "bg-epic-400/15 text-epic-500" },
-  legendary: {
-    label: "Legendary",
-    species: "Baobab",
-    badge: "bg-legend-400/15 text-legend-500",
-  },
-  mythical: {
-    label: "Mythical",
-    species: "Dragon blood tree",
-    badge: "bg-myth-400/15 text-myth-500",
-  },
+export const RARITY_INFO: Record<Rarity, { label: string; badge: string }> = {
+  common: { label: "Common", badge: "bg-moss-100 text-moss-700" },
+  rare: { label: "Rare", badge: "bg-rare-400/15 text-rare-500" },
+  epic: { label: "Epic", badge: "bg-epic-400/15 text-epic-500" },
+  legendary: { label: "Legendary", badge: "bg-legend-400/15 text-legend-500" },
+  mythical: { label: "Mythical", badge: "bg-myth-400/15 text-myth-500" },
 };
 
 /** Streak length at which the luck bonus is fully maxed out. */
@@ -148,7 +157,6 @@ interface GameContextValue {
   setUsername: (name: string) => void;
   setIslandType: (type: IslandType) => void;
   setPreviewMode: (on: boolean) => void;
-  cycleTreeVariant: (id: string) => void;
   removeTree: (id: string) => void;
   resetProgress: () => void;
 }
@@ -316,7 +324,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const grown: Tree[] = pending.map((s) => ({
         id: s.id,
         rarity: s.rarity,
-        variant: Math.floor(Math.random() * TREE_VARIANTS),
+        variant: rollSpecies(s.rarity),
       }));
       setTrees((prev) => [...prev, ...grown]);
       setStoredStreak(nextStreak);
@@ -353,14 +361,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const setPreviewMode = (on: boolean) => {
     setPreviewModeState(on);
-  };
-
-  const cycleTreeVariant = (id: string) => {
-    setTrees((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, variant: (t.variant + 1) % TREE_VARIANTS } : t
-      )
-    );
   };
 
   const removeTree = (id: string) => {
@@ -401,7 +401,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setUsername,
         setIslandType,
         setPreviewMode,
-        cycleTreeVariant,
         removeTree,
         resetProgress,
       }}

@@ -8,9 +8,10 @@ Complete your daily wind-down tasks, earn saplings, and sleep to grow them into 
 
 1. **Tasks** — complete at least 5 of the 6 daily tasks to claim a sapling
 2. **Rarity** — saplings roll Common / Rare / Epic / Legendary / Mythical, base odds 60 / 25 / 10 / 4 / 1
-3. **Sleep** — Sleep Mode only unlocks between **10pm and 2am** on your device clock, once per night; 8 (simulated) hours later your saplings become trees
-4. **Streak** — every consecutive night you sleep having met the goal extends your streak, and a longer streak tilts the odds toward the rare tiers (a 30-night streak turns a 1% mythical into a 5% one)
-5. **Lumberjack** — sleep without doing your tasks and a random tree gets chopped down, and the streak resets
+3. **Species** — each tier has three species (common birch/oak/pine … mythical dragon blood/cherry blossom/rainbow eucalyptus). Which one you get is rolled the night the sapling grows and is fixed for good — trees can't be restyled
+4. **Sleep** — Sleep Mode only unlocks between **10pm and 2am** on your device clock, once per night; 8 (simulated) hours later your saplings become trees
+5. **Streak** — every consecutive night you sleep having met the goal extends your streak, and a longer streak tilts the odds toward the rare tiers (a 30-night streak turns a 1% mythical into a 5% one)
+6. **Lumberjack** — sleep without doing your tasks and a random tree gets chopped down, and the streak resets
 
 ### What counts as a night
 

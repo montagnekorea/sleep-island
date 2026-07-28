@@ -3,6 +3,7 @@
 import { Flame, Sprout } from "lucide-react";
 import {
   RARITY_INFO,
+  SPECIES,
   STREAK_LUCK_CAP,
   rarityOdds,
   useGame,
@@ -82,7 +83,7 @@ export default function RewardsPage() {
                     {RARITY_INFO[s.rarity].label} sapling
                   </p>
                   <p className="text-xs font-semibold text-stone-400">
-                    Grows into a {RARITY_INFO[s.rarity].species.toLowerCase()} tonight
+                    Its species is revealed when it grows tonight
                   </p>
                 </div>
               </li>
@@ -100,13 +101,17 @@ export default function RewardsPage() {
             const up = odds[rarity] > baseOdds[rarity] + 0.05;
             return (
               <li key={rarity} className="flex items-center gap-3">
-                <TreeIcon rarity={rarity} className="h-8 w-8 shrink-0" />
-                <span className="flex flex-col leading-tight">
+                <span className="flex shrink-0">
+                  {SPECIES[rarity].map((name, v) => (
+                    <TreeIcon key={name} rarity={rarity} variant={v} className="h-7 w-7" />
+                  ))}
+                </span>
+                <span className="flex min-w-0 flex-col leading-tight">
                   <span className="text-sm font-bold text-stone-600">
                     {RARITY_INFO[rarity].label}
                   </span>
                   <span className="text-[11px] font-semibold text-stone-400">
-                    {RARITY_INFO[rarity].species}
+                    {SPECIES[rarity].join(" · ")}
                   </span>
                 </span>
                 <span className="ml-auto flex items-baseline gap-1.5">
@@ -129,8 +134,8 @@ export default function RewardsPage() {
         </ul>
         <p className="mt-3.5 text-[11px] font-semibold text-stone-400">
           Longer streaks tilt the odds toward the rare tiers — a {STREAK_LUCK_CAP} night streak
-          turns a 1% mythical into a 5% one. Every tier comes in three looks; tap your trees on
-          the profile page to restyle them.
+          turns a 1% mythical into a 5% one. Each tier has three species; which one you get is
+          rolled the night your sapling grows and can&apos;t be changed afterwards.
         </p>
       </section>
 

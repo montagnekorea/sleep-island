@@ -1,20 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import {
-  islandCapacity,
-  RARITY_INFO,
-  TREE_VARIANTS,
-  useGame,
-  type Tree,
-} from "@/lib/game";
+import { islandCapacity, RARITY_INFO, speciesName, useGame, type Tree } from "@/lib/game";
 import { PageHeader } from "@/components/page-header";
 import { Island } from "@/components/island";
 import { TreeIcon } from "@/components/tree-icon";
 
 export default function ProfilePage() {
-  const { username, trees, islandType, streak, bestStreak, cycleTreeVariant, removeTree } =
-    useGame();
+  const { username, trees, islandType, streak, bestStreak, removeTree } = useGame();
   const [selected, setSelected] = useState<Tree | null>(null);
 
   const capacity = islandCapacity(trees.length);
@@ -49,7 +42,7 @@ export default function ProfilePage() {
           <Island trees={trees} islandType={islandType} onTreeClick={setSelected} />
         </div>
         <p className="mt-3 text-xs font-semibold text-sea-800/70">
-          {trees.length} / {capacity} plots — tap a tree to restyle or remove it
+          {trees.length} / {capacity} plots — tap a tree to look at it
         </p>
       </section>
 
@@ -66,25 +59,18 @@ export default function ProfilePage() {
               <TreeIcon rarity={selected.rarity} variant={selected.variant} className="h-12 w-12" />
             </div>
             <h2 className="mt-3 text-lg font-extrabold text-stone-800">
-              {RARITY_INFO[selected.rarity].label}{" "}
-              {RARITY_INFO[selected.rarity].species.toLowerCase()}
+              {speciesName(selected.rarity, selected.variant)}
             </h2>
-            <p className="mt-1 text-xs font-semibold text-stone-400">
-              Restyle it, or clear the plot for something new.
+            <span
+              className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-extrabold ${RARITY_INFO[selected.rarity].badge}`}
+            >
+              {RARITY_INFO[selected.rarity].label}
+            </span>
+            <p className="mt-3 text-xs font-semibold text-stone-400">
+              Its species was set the night it grew and can&apos;t be changed. Clearing the plot
+              won&apos;t bring it back.
             </p>
             <div className="mt-5 flex flex-col gap-2">
-              <button
-                onClick={() => {
-                  cycleTreeVariant(selected.id);
-                  setSelected({
-                    ...selected,
-                    variant: (selected.variant + 1) % TREE_VARIANTS,
-                  });
-                }}
-                className="w-full rounded-2xl bg-moss-500 py-3 text-sm font-extrabold text-white shadow-md shadow-moss-500/30 transition hover:bg-moss-600"
-              >
-                Change look
-              </button>
               <button
                 onClick={() => {
                   removeTree(selected.id);

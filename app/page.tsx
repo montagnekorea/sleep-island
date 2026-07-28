@@ -2,13 +2,28 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Axe, ListChecks, Moon, Sprout } from "lucide-react";
+import { Axe, Flame, ListChecks, Lock, Moon, Sprout } from "lucide-react";
 import { RARITY_INFO, TASK_GOAL, useGame, type SleepResult } from "@/lib/game";
+import { WINDOW_CLOSE_HOUR, WINDOW_OPEN_HOUR, formatHour } from "@/lib/time";
 import { Island } from "@/components/island";
+import { LiveClock } from "@/components/live-clock";
 import { TreeIcon } from "@/components/tree-icon";
 
 export default function HomePage() {
-  const { username, trees, saplings, completedTasks, sleep, islandType } = useGame();
+  const {
+    ready,
+    username,
+    trees,
+    saplings,
+    completedTasks,
+    sleep,
+    islandType,
+    streak,
+    windowOpen,
+    sleptTonight,
+    canSleep,
+    previewMode,
+  } = useGame();
   const [greeting, setGreeting] = useState("Good evening");
   const [sleeping, setSleeping] = useState(false);
   const [result, setResult] = useState<SleepResult | null>(null);
@@ -20,10 +35,12 @@ export default function HomePage() {
   const tasksDone = completedTasks.length;
 
   const startSleep = () => {
-    if (sleeping || result) return;
+    if (sleeping || result || !canSleep) return;
     setSleeping(true);
     setTimeout(() => {
-      setResult(sleep());
+      const outcome = sleep();
+      // the window can shut mid-animation — only show a result if it took
+      if (outcome) setResult(outcome);
       setSleeping(false);
     }, 2200);
   };
@@ -34,18 +51,31 @@ export default function HomePage() {
         <span className="text-xs font-semibold text-sea-800/70">@{username.toLowerCase()}</span>
       </div>
 
-      <h1 className="mt-2 text-center font-script text-3xl leading-relaxed text-stone-800">
+      <h1 className="mt-1 text-center font-script text-3xl leading-relaxed text-stone-800">
         {greeting}, {username}
       </h1>
-      <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.18em] text-sea-800/60">
-        every good night grows a tree
-      </p>
 
-      <div className="mt-7 animate-float-soft">
+      <div className="mt-4">
+        <LiveClock />
+      </div>
+
+      <div className="mt-5 animate-float-soft">
         <Island trees={trees} islandType={islandType} compact />
       </div>
 
-      <div className="mt-6 flex gap-2">
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <span
+          className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold shadow-sm ${
+            streak > 0 ? "bg-legend-400/15 text-legend-500" : "bg-white text-stone-500"
+          }`}
+        >
+          <Flame
+            size={14}
+            className={streak > 0 ? "text-legend-400" : "text-stone-300"}
+            fill={streak > 0 ? "currentColor" : "none"}
+          />
+          {streak} night{streak === 1 ? "" : "s"}
+        </span>
         <span className="flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-bold text-stone-500 shadow-sm">
           <Sprout size={14} className="text-moss-500" />
           {saplings.length} sapling{saplings.length === 1 ? "" : "s"}
@@ -59,29 +89,125 @@ export default function HomePage() {
         </Link>
       </div>
 
-      <button
+      <SleepButton
+        ready={ready}
+        sleeping={sleeping}
+        canSleep={canSleep}
         onClick={startSleep}
-        disabled={sleeping}
-        aria-label="Activate sleep mode"
-        className={`mt-9 flex h-36 w-36 items-center justify-center rounded-full bg-gradient-to-b from-moss-400 to-moss-600 text-white shadow-xl shadow-moss-500/40 transition-transform duration-300 hover:scale-[1.04] active:scale-95 ${
-          sleeping ? "animate-glow-pulse scale-105" : ""
-        }`}
-      >
-        <Moon size={52} strokeWidth={1.8} fill={sleeping ? "currentColor" : "none"} />
-      </button>
+      />
 
-      <p className="mt-5 text-sm font-extrabold text-sea-800">
-        {sleeping ? "Sleeping… 8 hours drift by 💤" : "Activate Sleep Mode"}
-      </p>
-      {!sleeping && tasksDone < TASK_GOAL && (
-        <p className="mt-1.5 text-xs font-semibold text-sea-800/70">
-          {TASK_GOAL - tasksDone} task{TASK_GOAL - tasksDone === 1 ? "" : "s"} left — or the
-          lumberjack pays a visit
-        </p>
-      )}
+      <SleepStatus
+        ready={ready}
+        sleeping={sleeping}
+        windowOpen={windowOpen}
+        previewMode={previewMode}
+        sleptTonight={sleptTonight}
+        tasksDone={tasksDone}
+        streak={streak}
+      />
 
       {result && <SleepResultModal result={result} onClose={() => setResult(null)} />}
     </div>
+  );
+}
+
+function SleepButton({
+  ready,
+  sleeping,
+  canSleep,
+  onClick,
+}: {
+  ready: boolean;
+  sleeping: boolean;
+  canSleep: boolean;
+  onClick: () => void;
+}) {
+  const locked = ready && !canSleep && !sleeping;
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={!ready || locked || sleeping}
+      aria-label={locked ? "Sleep mode is closed right now" : "Activate sleep mode"}
+      className={`mt-8 flex h-36 w-36 items-center justify-center rounded-full text-white transition-all duration-300 ${
+        locked
+          ? "cursor-not-allowed bg-gradient-to-b from-fog-200 to-fog-200 text-stone-400 shadow-inner"
+          : "bg-gradient-to-b from-moss-400 to-moss-600 shadow-xl shadow-moss-500/40 hover:scale-[1.04] active:scale-95"
+      } ${sleeping ? "animate-glow-pulse scale-105" : ""} ${!ready ? "opacity-60" : ""}`}
+    >
+      {locked ? (
+        <Lock size={44} strokeWidth={1.8} />
+      ) : (
+        <Moon size={52} strokeWidth={1.8} fill={sleeping ? "currentColor" : "none"} />
+      )}
+    </button>
+  );
+}
+
+function SleepStatus({
+  ready,
+  sleeping,
+  windowOpen,
+  previewMode,
+  sleptTonight,
+  tasksDone,
+  streak,
+}: {
+  ready: boolean;
+  sleeping: boolean;
+  windowOpen: boolean;
+  previewMode: boolean;
+  sleptTonight: boolean;
+  tasksDone: number;
+  streak: number;
+}) {
+  if (!ready) return <p className="mt-5 h-5" aria-hidden />;
+
+  if (sleeping) {
+    return (
+      <p className="mt-5 text-sm font-extrabold text-sea-800">Sleeping… 8 hours drift by 💤</p>
+    );
+  }
+
+  if (sleptTonight) {
+    return (
+      <>
+        <p className="mt-5 text-sm font-extrabold text-sea-800">You&apos;ve slept for tonight</p>
+        <p className="mt-1.5 text-center text-xs font-semibold text-sea-800/70">
+          Come back tomorrow at {formatHour(WINDOW_OPEN_HOUR)} to keep the streak going
+        </p>
+      </>
+    );
+  }
+
+  if (!windowOpen && !previewMode) {
+    return (
+      <>
+        <p className="mt-5 text-sm font-extrabold text-sea-800">Sleep Mode is closed</p>
+        <p className="mt-1.5 text-center text-xs font-semibold text-sea-800/70">
+          It opens between {formatHour(WINDOW_OPEN_HOUR)} and {formatHour(WINDOW_CLOSE_HOUR)} —
+          tick off your tasks in the meantime
+        </p>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <p className="mt-5 text-sm font-extrabold text-sea-800">Activate Sleep Mode</p>
+      {tasksDone < TASK_GOAL ? (
+        <p className="mt-1.5 text-center text-xs font-semibold text-sea-800/70">
+          {TASK_GOAL - tasksDone} task{TASK_GOAL - tasksDone === 1 ? "" : "s"} left — or the
+          lumberjack pays a visit
+        </p>
+      ) : (
+        <p className="mt-1.5 text-center text-xs font-semibold text-sea-800/70">
+          {streak > 0
+            ? `Sleep now to reach night ${streak + 1}`
+            : "Sleep now to start a new streak"}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -122,6 +248,12 @@ function SleepResultModal({
                 />
               ))}
             </div>
+            <div className="mt-5 flex items-center justify-center gap-1.5 rounded-2xl bg-legend-400/10 py-2.5 text-sm font-extrabold text-legend-500">
+              <Flame size={16} fill="currentColor" strokeWidth={0} />
+              {result.streakExtended
+                ? `${result.streak} night streak`
+                : "Streak started — night 1"}
+            </div>
           </>
         ) : (
           <>
@@ -136,6 +268,11 @@ function SleepResultModal({
                 ? `You skipped your tasks, so he chopped down a ${RARITY_INFO[result.removed.rarity].label.toLowerCase()} tree.`
                 : "You skipped your tasks — luckily there was nothing on your island to chop. Yet."}
             </p>
+            {result.streakLost > 0 && (
+              <div className="mt-5 rounded-2xl bg-fog-100 py-2.5 text-sm font-extrabold text-stone-400">
+                Your {result.streakLost} night streak is gone
+              </div>
+            )}
           </>
         )}
         <button

@@ -4,9 +4,16 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
+import {
+  isWindowOpen,
+  nightKey,
+  previousNight,
+  type NightKey,
+} from "@/lib/time";
 
 export type Rarity = "common" | "rare" | "epic" | "legendary" | "mythical";
 
@@ -41,31 +48,58 @@ export const DAILY_TASKS: DailyTask[] = [
 
 export const TASK_GOAL = 5;
 
-export const RARITY_INFO: Record<
-  Rarity,
-  { label: string; chance: string; badge: string }
-> = {
-  common: { label: "Common", chance: "60%", badge: "bg-moss-100 text-moss-700" },
-  rare: { label: "Rare", chance: "25%", badge: "bg-rare-400/15 text-rare-500" },
-  epic: { label: "Epic", chance: "10%", badge: "bg-epic-400/15 text-epic-500" },
-  legendary: {
-    label: "Legendary",
-    chance: "4%",
-    badge: "bg-legend-400/15 text-legend-500",
-  },
-  mythical: {
-    label: "Mythical",
-    chance: "1%",
-    badge: "bg-myth-400/15 text-myth-500",
-  },
+export const RARITY_INFO: Record<Rarity, { label: string; badge: string }> = {
+  common: { label: "Common", badge: "bg-moss-100 text-moss-700" },
+  rare: { label: "Rare", badge: "bg-rare-400/15 text-rare-500" },
+  epic: { label: "Epic", badge: "bg-epic-400/15 text-epic-500" },
+  legendary: { label: "Legendary", badge: "bg-legend-400/15 text-legend-500" },
+  mythical: { label: "Mythical", badge: "bg-myth-400/15 text-myth-500" },
 };
 
-export function rollRarity(): Rarity {
-  const r = Math.random();
-  if (r < 0.01) return "mythical";
-  if (r < 0.05) return "legendary";
-  if (r < 0.15) return "epic";
-  if (r < 0.4) return "rare";
+/** Streak length at which the luck bonus is fully maxed out. */
+export const STREAK_LUCK_CAP = 30;
+
+/** Odds at streak 0, and the extra percentage points a maxed streak adds. */
+const ODDS_BASE: Record<Exclude<Rarity, "common">, number> = {
+  mythical: 1,
+  legendary: 4,
+  epic: 10,
+  rare: 25,
+};
+const ODDS_BONUS: Record<Exclude<Rarity, "common">, number> = {
+  mythical: 4,
+  legendary: 8,
+  epic: 12,
+  rare: 5,
+};
+
+/**
+ * Percentage odds for each rarity at a given streak, always summing to 100.
+ * The rare tiers scale up with the streak and common absorbs the difference,
+ * so a 30-night streak turns a 1% mythical into a 5% one.
+ */
+export function rarityOdds(streak: number): Record<Rarity, number> {
+  const boost = Math.min(Math.max(streak, 0), STREAK_LUCK_CAP) / STREAK_LUCK_CAP;
+  const mythical = ODDS_BASE.mythical + ODDS_BONUS.mythical * boost;
+  const legendary = ODDS_BASE.legendary + ODDS_BONUS.legendary * boost;
+  const epic = ODDS_BASE.epic + ODDS_BONUS.epic * boost;
+  const rare = ODDS_BASE.rare + ODDS_BONUS.rare * boost;
+  return {
+    mythical,
+    legendary,
+    epic,
+    rare,
+    common: 100 - mythical - legendary - epic - rare,
+  };
+}
+
+export function rollRarity(streak = 0): Rarity {
+  const odds = rarityOdds(streak);
+  const r = Math.random() * 100;
+  if (r < odds.mythical) return "mythical";
+  if (r < odds.mythical + odds.legendary) return "legendary";
+  if (r < odds.mythical + odds.legendary + odds.epic) return "epic";
+  if (r < odds.mythical + odds.legendary + odds.epic + odds.rare) return "rare";
   return "common";
 }
 
@@ -74,21 +108,30 @@ export function islandCapacity(treeCount: number): number {
 }
 
 export type SleepResult =
-  | { kind: "growth"; grown: Tree[] }
-  | { kind: "lumberjack"; removed: Tree | null };
+  | { kind: "growth"; grown: Tree[]; streak: number; streakExtended: boolean }
+  | { kind: "lumberjack"; removed: Tree | null; streakLost: number };
 
 interface GameContextValue {
+  ready: boolean;
+  now: Date;
   username: string;
   completedTasks: string[];
   saplings: Sapling[];
   trees: Tree[];
   claimedToday: boolean;
   islandType: IslandType;
+  streak: number;
+  bestStreak: number;
+  windowOpen: boolean;
+  sleptTonight: boolean;
+  canSleep: boolean;
+  previewMode: boolean;
   toggleTask: (id: string) => void;
   claimSapling: () => Sapling | null;
-  sleep: () => SleepResult;
+  sleep: () => SleepResult | null;
   setUsername: (name: string) => void;
   setIslandType: (type: IslandType) => void;
+  setPreviewMode: (on: boolean) => void;
   cycleTreeVariant: (id: string) => void;
   removeTree: (id: string) => void;
   resetProgress: () => void;
@@ -97,6 +140,9 @@ interface GameContextValue {
 const GameContext = createContext<GameContextValue | null>(null);
 
 const STORAGE_KEY = "sleep-island-save-v1";
+
+/** How often the provider re-checks the clock for window / night rollovers. */
+const TICK_MS = 20_000;
 
 function makeId(): string {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -109,7 +155,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [trees, setTrees] = useState<Tree[]>([]);
   const [claimedToday, setClaimedToday] = useState(false);
   const [islandType, setIslandTypeState] = useState<IslandType>("forest");
+  const [storedStreak, setStoredStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [lastSleepNight, setLastSleepNight] = useState<NightKey | null>(null);
+  const [taskNight, setTaskNight] = useState<NightKey | null>(null);
+  const [previewMode, setPreviewModeState] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), TICK_MS);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     try {
@@ -138,6 +195,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
         ) {
           setIslandTypeState(saved.islandType);
         }
+        // fields below arrived with streaks — saves from before that lack them
+        if (typeof saved.streak === "number") setStoredStreak(saved.streak);
+        if (typeof saved.bestStreak === "number") setBestStreak(saved.bestStreak);
+        if (typeof saved.lastSleepNight === "string") setLastSleepNight(saved.lastSleepNight);
+        if (typeof saved.taskNight === "string") setTaskNight(saved.taskNight);
+        if (typeof saved.previewMode === "boolean") setPreviewModeState(saved.previewMode);
       }
     } catch {
       // corrupted save — start fresh
@@ -156,9 +219,54 @@ export function GameProvider({ children }: { children: ReactNode }) {
         trees,
         claimedToday,
         islandType,
+        streak: storedStreak,
+        bestStreak,
+        lastSleepNight,
+        taskNight,
+        previewMode,
       })
     );
-  }, [hydrated, username, completedTasks, saplings, trees, claimedToday, islandType]);
+  }, [
+    hydrated,
+    username,
+    completedTasks,
+    saplings,
+    trees,
+    claimedToday,
+    islandType,
+    storedStreak,
+    bestStreak,
+    lastSleepNight,
+    taskNight,
+    previewMode,
+  ]);
+
+  const currentNight = useMemo(() => nightKey(now), [now]);
+
+  // A stored streak only stands if the last sleep was tonight or last night;
+  // any older and nights were missed, so the streak is already broken.
+  const streak = useMemo(() => {
+    if (!lastSleepNight) return 0;
+    if (lastSleepNight === currentNight) return storedStreak;
+    if (lastSleepNight === previousNight(currentNight)) return storedStreak;
+    return 0;
+  }, [lastSleepNight, currentNight, storedStreak]);
+
+  // Tasks belong to a night, so they clear themselves when the night rolls over
+  // at 2am — even if the app was left open across the boundary.
+  useEffect(() => {
+    if (!hydrated) return;
+    if (taskNight === currentNight) return;
+    setCompletedTasks([]);
+    setClaimedToday(false);
+    setTaskNight(currentNight);
+  }, [hydrated, currentNight, taskNight]);
+
+  const windowOpen = isWindowOpen(now);
+  const sleptTonight = lastSleepNight === currentNight;
+  // preview mode only waives the clock — one sleep per night still holds, or
+  // trees could be farmed by tapping the button repeatedly
+  const canSleep = hydrated && (windowOpen || previewMode) && !sleptTonight;
 
   const toggleTask = (id: string) => {
     setCompletedTasks((prev) =>
@@ -168,27 +276,36 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const claimSapling = (): Sapling | null => {
     if (claimedToday || completedTasks.length < TASK_GOAL) return null;
-    const sapling: Sapling = { id: makeId(), rarity: rollRarity() };
+    const sapling: Sapling = { id: makeId(), rarity: rollRarity(streak) };
     setSaplings((prev) => [...prev, sapling]);
     setClaimedToday(true);
     return sapling;
   };
 
-  const sleep = (): SleepResult => {
+  const sleep = (): SleepResult | null => {
+    const at = new Date();
+    const night = nightKey(at);
+    // guard the mechanic itself, not just the button
+    if ((!isWindowOpen(at) && !previewMode) || lastSleepNight === night) return null;
+
     const goalMet = completedTasks.length >= TASK_GOAL;
+    const streakExtended = lastSleepNight === previousNight(night);
     let result: SleepResult;
 
     if (goalMet) {
+      const nextStreak = streakExtended ? streak + 1 : 1;
       const pending = [...saplings];
       // earned but unclaimed sapling still counts — auto-claim it
-      if (!claimedToday) pending.push({ id: makeId(), rarity: rollRarity() });
+      if (!claimedToday) pending.push({ id: makeId(), rarity: rollRarity(streak) });
       const grown: Tree[] = pending.map((s) => ({
         id: s.id,
         rarity: s.rarity,
         variant: Math.floor(Math.random() * TREE_VARIANTS),
       }));
       setTrees((prev) => [...prev, ...grown]);
-      result = { kind: "growth", grown };
+      setStoredStreak(nextStreak);
+      setBestStreak((prev) => Math.max(prev, nextStreak));
+      result = { kind: "growth", grown, streak: nextStreak, streakExtended };
     } else {
       let removed: Tree | null = null;
       if (trees.length > 0) {
@@ -196,13 +313,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
         removed = victim;
         setTrees((prev) => prev.filter((t) => t.id !== victim.id));
       }
-      result = { kind: "lumberjack", removed };
+      setStoredStreak(0);
+      result = { kind: "lumberjack", removed, streakLost: streak };
     }
 
+    setLastSleepNight(night);
     // a new day begins
     setSaplings([]);
     setCompletedTasks([]);
     setClaimedToday(false);
+    setTaskNight(night);
     return result;
   };
 
@@ -213,6 +333,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const setIslandType = (type: IslandType) => {
     setIslandTypeState(type);
+  };
+
+  const setPreviewMode = (on: boolean) => {
+    setPreviewModeState(on);
   };
 
   const cycleTreeVariant = (id: string) => {
@@ -232,22 +356,35 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setSaplings([]);
     setTrees([]);
     setClaimedToday(false);
+    setStoredStreak(0);
+    setBestStreak(0);
+    setLastSleepNight(null);
+    setTaskNight(nightKey(new Date()));
   };
 
   return (
     <GameContext.Provider
       value={{
+        ready: hydrated,
+        now,
         username,
         completedTasks,
         saplings,
         trees,
         claimedToday,
         islandType,
+        streak,
+        bestStreak,
+        windowOpen,
+        sleptTonight,
+        canSleep,
+        previewMode,
         toggleTask,
         claimSapling,
         sleep,
         setUsername,
         setIslandType,
+        setPreviewMode,
         cycleTreeVariant,
         removeTree,
         resetProgress,

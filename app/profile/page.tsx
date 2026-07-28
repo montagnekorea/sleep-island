@@ -13,7 +13,8 @@ import { Island } from "@/components/island";
 import { TreeIcon } from "@/components/tree-icon";
 
 export default function ProfilePage() {
-  const { username, trees, saplings, islandType, cycleTreeVariant, removeTree } = useGame();
+  const { username, trees, islandType, streak, bestStreak, cycleTreeVariant, removeTree } =
+    useGame();
   const [selected, setSelected] = useState<Tree | null>(null);
 
   const capacity = islandCapacity(trees.length);
@@ -32,10 +33,11 @@ export default function ProfilePage() {
         <p className="mt-3 text-lg font-extrabold text-stone-800">{username}</p>
         <p className="text-xs font-semibold text-stone-400">@{username.toLowerCase()}</p>
 
-        <div className="mt-5 grid w-full grid-cols-3 divide-x divide-stone-100 rounded-2xl bg-fog-50 py-3.5 text-center">
+        <div className="mt-5 grid w-full grid-cols-4 divide-x divide-stone-100 rounded-2xl bg-fog-50 py-3.5 text-center">
           <Stat value={trees.length} label="Trees" />
-          <Stat value={saplings.length} label="Saplings" />
           <Stat value={epicPlus} label="Epic+" />
+          <Stat value={streak} label="Streak" />
+          <Stat value={bestStreak} label="Best" />
         </div>
       </div>
 
